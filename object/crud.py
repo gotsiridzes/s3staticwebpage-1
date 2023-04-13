@@ -105,7 +105,7 @@ object new-bucket-btu-7 -loc_o hello.txt -u_t upload_fileobj
 '''
 
 
-def upload_local_file(aws_s3_client, bucket_name, filename, keep_file_name, upload_type="upload_file"):
+def upload_local_file(aws_s3_client, bucket_name, path, keep_file_name, upload_type="upload_file"):
 
     allowed_types = {
         "jpeg": "image/jpeg",
@@ -114,28 +114,27 @@ def upload_local_file(aws_s3_client, bucket_name, filename, keep_file_name, uplo
         "txt": "text/plain"
     }
 
-    file_path = Path(f"awss3/static/{filename}")
-    mime_type = magic.from_file(file_path, mime=True)
+    mime_type = magic.from_file(path, mime=True)
     content_type = None
     file_name = None
 
     for type, ctype in allowed_types.items():
         if mime_type == ctype:
             content_type = ctype
-            file_name = filename if keep_file_name else generate_file_name(type)
+            file_name = path if keep_file_name else generate_file_name(type)
 
     if not content_type:
         raise ValueError("Invalid type")
 
     if upload_type == "upload_file":
         aws_s3_client.upload_file(
-            file_path,
+            path,
             bucket_name,
             file_name,
             ExtraArgs={'ContentType': content_type}
         )
     elif upload_type == "upload_fileobj":
-        with open(file_path, "rb") as file:
+        with open(path, "rb") as file:
             aws_s3_client.upload_fileobj(
                 file,
                 bucket_name,
@@ -143,7 +142,7 @@ def upload_local_file(aws_s3_client, bucket_name, filename, keep_file_name, uplo
                 ExtraArgs={'ContentType': content_type}
             )
     elif upload_type == "put_object":
-        with open(file_path, "rb") as file:
+        with open(path, "rb") as file:
             aws_s3_client.put_object(
                 Body=file.read(),
                 Bucket=bucket_name,
@@ -154,7 +153,7 @@ def upload_local_file(aws_s3_client, bucket_name, filename, keep_file_name, uplo
         multipart_upload(
             aws_s3_client,
             bucket_name,
-            file_path,
+            path,
             file_name,
             content_type
         )
